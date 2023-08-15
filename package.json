@@ -1,0 +1,25 @@
+{
+  "name": "nodebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3dunoabraham/nodebot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/3dunoabraham/nodebot/issues"
+  },
+  "homepage": "https://github.com/3dunoabraham/nodebot#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.32.0",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.2"
+  }
+}
