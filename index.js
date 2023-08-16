@@ -1,5 +1,13 @@
 require('dotenv').config();
 const { Telegraf } = require('telegraf');
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.listen(80);
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.start((ctx) => ctx.reply('Welcome'));
