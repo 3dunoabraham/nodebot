@@ -37,7 +37,7 @@ async function generateInlineResults(queryText,randdd) {
   try {
     thePllayer = await fetchPlayer(queryText)
   } catch (error) {
-    thePllayer = {name:`foundHardcode: ${foundHardcode}`}
+    thePllayer = {name:`player not found`}
     
   }
   const betterResult = !thePllayer.subscription ? textResult : {
