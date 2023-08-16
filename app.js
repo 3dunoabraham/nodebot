@@ -42,7 +42,7 @@ async function generateInlineResults(queryText,randdd) {
     thePllayer = {name:`player not found`,subscription:0}
     
   }
-  const betterResult = !thePllayer.subscription ? textResult : {
+  const betterResult = !thePllayer?.subscription ? textResult : {
     type: 'article',
     id: '1',
     title: '->Text Result +++'+thePllayer.name,
