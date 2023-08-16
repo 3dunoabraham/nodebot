@@ -1,39 +1,34 @@
-function cronLikeInterval(cronExpression, callback) {
-  const cronParts = cronExpression.split(' ');
+function cronInterval(callback, interval) {
+  let running = false;
+  let lastExecutionTime = Date.now();
 
-  if (cronParts.length !== 5) {
-    throw new Error('Invalid cron expression format. Expected 5 parts.');
-  }
+  function tick() {
+    const currentTime = Date.now();
+    const timeSinceLastExecution = currentTime - lastExecutionTime;
 
-  const [minute, hour, dayOfMonth, month, dayOfWeek] = cronParts;
+    if (!running && timeSinceLastExecution >= interval) {
+      running = true;
+      lastExecutionTime = currentTime;
 
-  function checkAndExecute() {
-    const now = new Date();
-    if (
-      (minute === '*' || now.getMinutes() === parseInt(minute)) &&
-      (hour === '*' || now.getHours() === parseInt(hour)) &&
-      (dayOfMonth === '*' || now.getDate() === parseInt(dayOfMonth)) &&
-      (month === '*' || now.getMonth() === parseInt(month) - 1) &&
-      (dayOfWeek === '*' || now.getDay() === parseInt(dayOfWeek))
-    ) {
-      callback();
+      callback(() => {
+        running = false;
+      });
     }
   }
 
-  checkAndExecute(); // Execute immediately
-
-  setInterval(checkAndExecute, 60 * 1000); // Check every minute
+  tick(); // Execute immediately on start
+  setInterval(tick, 1000); // Tick every second
 }
 
-// Example usage
-cronLikeInterval('*/15 * * * *', () => {
-  console.log('This function will be executed every 15 minutes.');
-});
-
-
-
-
-
+// Usage
+cronInterval((done) => {
+  console.log("Cron job executed at:", new Date());
+  // Simulate asynchronous operation, e.g., API call, database query, etc.
+  setTimeout(() => {
+    console.log("Cron job completed");
+    done();
+  }, 2000);
+}, 50000); // Execute the job every 5 seconds
 
 
 
