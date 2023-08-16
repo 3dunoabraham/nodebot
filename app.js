@@ -26,7 +26,9 @@ async function generateInlineResults(queryText,randdd) {
   const textResult = {
     type: 'article',
     id: '1',
+    name: 'name  Rrr #'+randdd,
     title: 'Text Result #'+randdd,
+    subscription:0,
     input_message_content: {
       message_text: `You entered: ${queryText} \nYou got: ${randdd}`,
     },
