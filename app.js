@@ -7,6 +7,30 @@ const { Telegraf } = require('telegraf');
 const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.start((ctx) => ctx.reply('Welcome'));
 bot.help((ctx) => ctx.reply('Send me a sticker'));
+bot.on('inline_query', async (ctx) => {
+  const queryText = ctx.update.inline_query.query;
+
+  const randdd = parseInt(Math.random() * 100)
+  const results = generateInlineResults(queryText,randdd);
+
+  await ctx.answerInlineQuery(results);
+});
+
+function generateInlineResults(queryText,randdd) {
+  const results = [];
+  const textResult = {
+    type: 'article',
+    id: '1',
+    title: 'Text Result #'+randdd,
+    input_message_content: {
+      message_text: `You entered: ${queryText} \nYou got: ${randdd}`,
+    },
+  };
+
+  results.push(textResult);
+
+  return results;
+}
 bot.launch();
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
