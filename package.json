@@ -1,27 +1,22 @@
 {
-  "name": "nodebot",
+  "name": "demo_express",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/3dunoabraham/nodebot.git"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/3dunoabraham/nodebot/issues"
-  },
-  "homepage": "https://github.com/3dunoabraham/nodebot#readme",
+  "author": "Truly Mittal <trulymittal@gmail.com>",
+  "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.32.0",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "node-cron": "^3.0.2",
-    "telegraf": "^4.12.2"
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "http-errors": "^1.8.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12"
   }
 }
