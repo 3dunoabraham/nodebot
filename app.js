@@ -1,77 +1,72 @@
-const { createClient } = require('@supabase/supabase-js');
-const express = require('express')
-const createError = require('http-errors')
-const morgan = require('morgan')
 require('dotenv').config()
+const express = require('express')
+const morgan = require('morgan')
+const { createClient } = require('@supabase/supabase-js');
+const { fetchPlayer } = require('./script/state/repository/player');
+const { getCouplesFromOrders, getStringFromProfits } = require('./script/util/helper/player');
+const { shortHash } = require('./script/util/helper/hash');
 const { Telegraf } = require('telegraf');
-
-const hardcode = {
-  "c841339a5bafe0b116abc6dc4746557dc3cc9ebadc6f2d68423c1efd3cc34da7" : 3
-}
-
+const createError = require('http-errors')
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+
+
 bot.start((ctx) => ctx.reply('Welcome'));
 bot.help((ctx) => ctx.reply('Send me a sticker'));
-bot.on('inline_query', async (ctx) => {
-  const queryText = ctx.update.inline_query.query;
+bot.command('web', async (ctx) => {
+  const args = ctx.message.text.split(' ');
+  if (args.length !== 3) { return ctx.reply('Usage: /web <sub-app>') }
 
-  const randdd = parseInt(Math.random() * 100)
-  const results = await generateInlineResults(queryText,randdd);
+  const command = args[1]; // Extract the sub-app command after "/web"
+  let theTradeString = ""
+  if (command === 'pov') {
+    const queryText = args[2]; // Extract the user hash after "pov"
+    if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
+    let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
+    try {
+      thePllayer = await fetchPlayer(supabase, queryText)
+      let anotherString = ""
+      let tradesString = thePllayer.trades
+      theTradeString = tradesString
+      let tradesList2 = getCouplesFromOrders(tradesString)
+      let profitTradeList = tradesList2.filter((aTrade) => (aTrade.profitLoss > 0))
+      let profitableTradeString = getStringFromProfits(profitTradeList)
+      thePllayer.trades = anotherString + profitableTradeString
+    } catch (error) {
+      thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
+    }
 
-  await ctx.answerInlineQuery(results);
+    let theMessageReply = `Check-in result for: #${shortHash(queryText)}`
+    let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
+    statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
+    statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
+    let theTradesList = getCouplesFromOrders(theTradeString)
+    // console.log("theTradesList", theTradesList)
+    let theLastTrade = theTradesList.length > 0 ? theTradesList[theTradesList.length-1] : {}
+    if ("startHash" in theLastTrade) { delete theLastTrade["startHash"] }
+    statsMessageReply += `\n\nLast:\n${JSON.stringify(theLastTrade)}`
+
+    ctx.reply(`${theMessageReply}\n${statsMessageReply}\n\nStatus: ${!!thePllayer?.subscription ? "VIP" : "GUEST"}`);
+  } else {
+    ctx.reply('Invalid sub-app.\nAvailable sub-apps: pov, qub, city, town');
+  }
 });
 
-async function generateInlineResults(queryText,randdd) {
-  const results = [];
-  const textResult = {
-    type: 'article',
-    id: '1',
-    name: 'name  Rrr #'+randdd,
-    title: 'Text Result #'+randdd,
-    subscription:0,
-    input_message_content: {
-      message_text: `You entered: ${queryText} \nYou got: ${randdd}`,
-    },
-  };
-  
-  // const foundHardcode = hardcode[queryText]
-  let thePllayer = null;
-  try {
-    thePllayer = await fetchPlayer(queryText)
-  } catch (error) {
-    thePllayer = {name:`player not found`,subscription:0}
-    
-  }
-  const betterResult = !thePllayer?.subscription ? textResult : {
-    type: 'article',
-    id: '1',
-    title: '->Text Result +++'+thePllayer.name,
-    input_message_content: {
-      message_text: `ey: ${thePllayer.name} ye You entered: |${queryText}| \n${queryText.length}You got: ${randdd}`,
-    },
-  };
-  results.push(betterResult);
+// bot.on('inline_query', async (ctx) => {
+//   const queryText = ctx.update.inline_query.query;
 
-  return results;
-}
+//   const results = await generateInlineResults(queryText);
+//   await ctx.answerInlineQuery(results);
+// });
+
 bot.launch();
 // Enable graceful stop
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-async function fetchPlayer(playerHash) {
-  const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
-  const { data: existingStart, error: selectError } = await supabase
-    .from('player')
-    // .select()
-    .select('name, attempts, totalAttempts, goodAttempts, trades, mode, jwt, binancekeys, subscription, referral')
-    .match({ hash: playerHash })
-    .single();
-  return existingStart;
-}
 
 const app = express()
 app.use(express.json())
