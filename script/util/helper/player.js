@@ -1,3 +1,6 @@
+const { shortHash } = require('../../../script/util/helper/hash');
+const { fetchPlayer, updateModeIfValid } = require('../../../script/state/repository/player');
+
 function getCouplesFromOrders(transactionString) {
   if (!transactionString) return []
   const transactions = transactionString.split('&&&').filter(Boolean);
@@ -73,8 +76,74 @@ function getStringFromProfits (tradeCouples) {
   }).join("\n")
 }
 
+
+async function getFinalTelegramCheckMessage(supabase,queryText) {
+  let theLastOrder
+
+  let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
+    try {
+      thePllayer = await fetchPlayer(supabase, queryText)
+      let anotherString = ""
+      let tradesString = thePllayer.trades
+      theTradeString = tradesString
+      let tradesList2 = getCouplesFromOrders(tradesString)
+      let profitTradeList = tradesList2.filter((aTrade) => (aTrade.profitLoss > 0))
+      let profitableTradeString = getStringFromProfits(profitTradeList)
+      thePllayer.trades = anotherString + profitableTradeString
+
+    } catch (error) {
+      thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
+    }
+
+    let theMessageReply = `Check-in: #${shortHash(queryText)}`
+    let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
+    statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
+    statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
+    let theTradesList = getCouplesFromOrders(theTradeString)
+    // console.log("theTradesList", theTradesList)
+    let theLastTrade = theTradesList.length > 0 ? theTradesList[theTradesList.length-1] : {}
+    if ("startHash" in theLastTrade) {
+      
+      delete theLastTrade["startHash"]
+    }
+    {
+      // last trade exists
+      // console.log("thePllayer.trades", theTradeString)
+      
+      // if (!theTradeString) return []
+      const transactions = theTradeString.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
+      console.log("length of transactions", transactions.length)
+      if (transactions.length > 0) {
+        theLastOrder = transactions[transactions.length-1]
+        // console.log("theLastOrder", theLastOrder)
+        theLastTrade = `theLastOrder:${JSON.stringify(theLastOrder)}`
+      } else {
+        theLastTrade = `theLastTrade:${JSON.stringify(theLastTrade)}`
+      }
+    }
+  statsMessageReply += `\n\nLast:\n${theLastTrade}`
+
+
+  if (thePllayer?.mode > 0) {
+    console.log("binancekeys", thePllayer?.binancekeys, theLastOrder, "***\n\n\n***")
+    if (!!thePllayer?.binancekeys) {
+      console.log("binancekeys", thePllayer)
+      if (theLastOrder.isBuyer) {
+        console.log("ready to  buy -ready to  buy -ready to  buy -ready to  buy -ready to  buy -")
+        await updateModeIfValid(supabase, queryText)
+        console.log("complete await updateModeIfValid(supabase, queryText)-")
+      }
+    }
+  }
+
+  return (`${theMessageReply}\n${statsMessageReply}\n\nStatus: ${!!thePllayer?.subscription ? "VIP" : "GUEST"} || ${thePllayer?.mode > 0 ? "mode:"+thePllayer?.mode : "idle"}`);
+}
+
+
+
 module.exports = {
   getCouplesFromOrders,
   generateInlineResults,
   getStringFromProfits,
+  getFinalTelegramCheckMessage,
 }
