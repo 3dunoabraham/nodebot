@@ -1,22 +1,24 @@
+
+
 async function fetchPlayer(supabase, playerHash) {
   const { data: existingStart, error: selectError } = await supabase
     .from('player')
     // .select()
-    .select('name, attempts, totalAttempts, goodAttempts, trades, mode, jwt, binancekeys, subscription, referral, eloWTL')
+    .select('name, attempts, totalAttempts, goodAttempts, trades, orders, mode, jwt, binancekeys, subscription, referral, eloWTL')
     .match({ hash: playerHash })
     .single();
   return existingStart;
 }
 
-async function updateModeIfValid(supabase, playerHash) {
+async function updateModeIfValid(supabase, playerHash, newOrders) {
   const { data: playerData, error: selectError } = await supabase
     .from('player')
-    .select('mode, trades')
+    .select('mode, orders')
     .match({ hash: playerHash })
     .single();
   console.log("playerDataplayerDataplayerDataplayerDataplayerDataplayerData", playerData)
-  console.log("playerDataplayerDataplayerDataplayerDataplayerDataplayerData", )
-  if (!selectError && playerData && playerData.mode === 1 && !!playerData.trades) {
+  console.log("playerDataplayerDataplayerDatanpm iplayerDataplayerDataplayerData", )
+  if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
 
     const orderTransactions = theTradeString.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
     console.log("orderTransactions", orderTransactions)
@@ -24,7 +26,7 @@ async function updateModeIfValid(supabase, playerHash) {
 
     const { error: updateError } = await supabase
       .from('player')
-      .update({ mode: 0 })
+      .update({ mode: 0, orders: newOrders })
       .match({ hash: playerHash });
 
     if (!updateError) {

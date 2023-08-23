@@ -1,3 +1,5 @@
+var https = require('https');
+var crypto = require('crypto');
 const { shortHash } = require('../../../script/util/helper/hash');
 const { fetchPlayer, updateModeIfValid } = require('../../../script/state/repository/player');
 
@@ -78,7 +80,7 @@ function getStringFromProfits (tradeCouples) {
 
 
 async function getFinalTelegramCheckMessage(supabase,queryText) {
-  let theLastOrder
+  let theLastOrder = null
 
   let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
     try {
@@ -99,39 +101,70 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
     let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
     statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
     statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
-    let theTradesList = getCouplesFromOrders(theTradeString)
+    // let theTradesList = getCouplesFromOrders(theTradeString)
+
+
+
+
+    let theOrdersList = getCouplesFromOrders(thePllayer.orders)
     // console.log("theTradesList", theTradesList)
-    let theLastTrade = theTradesList.length > 0 ? theTradesList[theTradesList.length-1] : {}
-    if ("startHash" in theLastTrade) {
+    let lastOrder = theOrdersList.length > 0 ? theOrdersList[theOrdersList.length-1] : {}
+    if ("startHash" in lastOrder) {
       
-      delete theLastTrade["startHash"]
+      delete lastOrder["startHash"]
     }
     {
       // last trade exists
       // console.log("thePllayer.trades", theTradeString)
       
       // if (!theTradeString) return []
-      const transactions = theTradeString.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
+      const transactions = !!thePllayer.orders ? (
+        thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
+      ) : []
       console.log("length of transactions", transactions.length)
       if (transactions.length > 0) {
         theLastOrder = transactions[transactions.length-1]
         // console.log("theLastOrder", theLastOrder)
-        theLastTrade = `theLastOrder:${JSON.stringify(theLastOrder)}`
+        lastOrder = `theLastOrder:${JSON.stringify(theLastOrder)}`
       } else {
-        theLastTrade = `theLastTrade:${JSON.stringify(theLastTrade)}`
+        lastOrder = `lastOrder from coupled:${JSON.stringify(lastOrder)}`
       }
     }
-  statsMessageReply += `\n\nLast:\n${theLastTrade}`
+  statsMessageReply += `\n\nLast Order:\n${lastOrder}`
 
 
   if (thePllayer?.mode > 0) {
     console.log("binancekeys", thePllayer?.binancekeys, theLastOrder, "***\n\n\n***")
     if (!!thePllayer?.binancekeys) {
       console.log("binancekeys", thePllayer)
-      if (theLastOrder.isBuyer) {
+      if (!!theLastOrder && (theLastOrder.isBuyer || theLastOrder.side.toLowerCase() == "buy")) {
         console.log("ready to  buy -ready to  buy -ready to  buy -ready to  buy -ready to  buy -")
-        await updateModeIfValid(supabase, queryText)
+        await updateModeIfValid(supabase, queryText, null)
         console.log("complete await updateModeIfValid(supabase, queryText)-")
+
+        let side = "buy"
+        let symbol = "BTCUSDT"
+        let quantity = "0.001"
+        let price = theLastOrder.price
+        let apikeypublic = thePllayer.binancekeys.split(":")[0] || ""
+        let apikeysecret = thePllayer.binancekeys.split(":")[1] || ""
+
+        let orderSuccess = true
+
+        if ((`${apikeypublic}${apikeysecret}`).length == 128) {
+          console.log(`apikeypublic ${apikeypublic}${apikeysecret}`)
+          let theFinalTradeData = { side, symbol, quantity, price }
+          console.log("theFinalTradeDatatheFinalTradeData -", theFinalTradeData)
+          // throw Error("no orders in alpha")
+          makeLimitOrder( theFinalTradeData, apikeypublic, apikeysecret,
+            (result) => { 
+              if (!result) { throw Error("no result in make limit order") }
+            }
+          );
+        } else {
+          orderSuccess = false
+        }
+        
       }
     }
   }
@@ -139,6 +172,67 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
   return (`${theMessageReply}\n${statsMessageReply}\n\nStatus: ${!!thePllayer?.subscription ? "VIP" : "GUEST"} || ${thePllayer?.mode > 0 ? "mode:"+thePllayer?.mode : "idle"}`);
 }
 
+const generalLookupTable= {
+  'BTC': 1,
+  'ETH': 5,
+  'BNB': 4,
+  'USDT': 4,
+  'ADA': 4,
+  'DOGE': 8,
+  'XRP': 4,
+  'DOT': 4,
+  'LINK': 3,
+  'FTM': 4,
+  'UNI': 4,
+  'SOL': 4,
+};
+function getCryptoPriceDecimals(symbol) {
+  return generalLookupTable[symbol] || 2;
+}
+function makeLimitOrder({ side, symbol, quantity, price, recvWindow = 5000, timestamp = Date.now() }, apiKey, apiSecret, callback) {
+  // if (apiKey === "user") {
+  //   const chatId = process.env.TELEGRAM_CHAT_ID;
+  //   const token = process.env.TELEGRAM_BOT_TOKEN;
+
+  //   // const message = `Demo API Key @${chatId} | w${token} \n\n\n\n  used to place an order:\nSide: ${side}\nSymbol: ${symbol}\nQuantity: ${quantity}\nPrice: ${price}\n`;    
+  //   // const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${message}`;
+  //   // https.get(url);
+  //   callback(false);
+  //   return;
+  // }
+
+  const options = {
+    hostname: 'api.binance.com',
+    port: 443,
+    path: '/api/v3/order',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-MBX-APIKEY': apiKey
+    }
+  };
+  let _price = !!price ? price.toFixed(getCryptoPriceDecimals(symbol)) : 0
+  if (!_price) {
+    return null
+  }
+  const params = `symbol=${symbol}&side=${side}&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${_price}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
+  const signature = crypto.createHmac('sha256', apiSecret).update(params).digest('hex');
+  const data = `${params}&signature=${signature}`;
+  const req = https.request(options, (res) => {
+    let result = '';
+    res.on('data', (data) => {
+      result += data;
+    });
+    res.on('end', () => {
+      callback(JSON.parse(result));
+    });
+  });
+  req.on('error', (err) => {
+    callback(err);
+  });
+  req.write(data);
+  req.end();
+}
 
 
 module.exports = {
