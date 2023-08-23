@@ -79,10 +79,18 @@ function getStringFromProfits (tradeCouples) {
 }
 
 
-async function getFinalTelegramCheckMessage(supabase,queryText) {
-  let theLastOrder = null
-
+async function setupPlayerStatsMessageBody(supabase,queryText, thePllayer) {
+  let statsMessageReply = setupPlayerStatsMessageBody`Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
+  statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
+  statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
+  return statsMessageReply
+}
+async function reconstructPlayer(supabase,queryText) {
+  
   let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
+
+
+    // fetch player
     try {
       thePllayer = await fetchPlayer(supabase, queryText)
       let anotherString = ""
@@ -96,52 +104,31 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
     } catch (error) {
       thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
     }
-
+return thePllayer
+}
+async function getFinalTelegramCheckMessage(supabase,queryText) {
+  let theLastOrder = null
+  let thePllayer = await reconstructPlayer(supabase,queryText)
     let theMessageReply = `Check-in: #${shortHash(queryText)}`
-    let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
-    statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
-    statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
-    // let theTradesList = getCouplesFromOrders(theTradeString)
-
-
-
-
+    let statsMessageReply = setupPlayerStatsMessageBody(supabase,queryText, thePllayer)
     let theOrdersList = getCouplesFromOrders(thePllayer.orders)
-    // console.log("theTradesList", theTradesList)
     let lastOrder = theOrdersList.length > 0 ? theOrdersList[theOrdersList.length-1] : {}
-    if ("startHash" in lastOrder) {
-      
-      delete lastOrder["startHash"]
+    if ("startHash" in lastOrder) { delete lastOrder["startHash"] }
+    const transactions = !!thePllayer.orders ? (
+      thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
+    ) : []
+    if (transactions.length > 0) {
+      theLastOrder = transactions[transactions.length-1]
+      lastOrder = `theLastOrder:${JSON.stringify(theLastOrder)}`
+    } else {
+      lastOrder = `lastOrder from coupled:${JSON.stringify(lastOrder)}`
     }
-    {
-      // last trade exists
-      // console.log("thePllayer.trades", theTradeString)
-      
-      // if (!theTradeString) return []
-      const transactions = !!thePllayer.orders ? (
-        thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
-      ) : []
-      console.log("length of transactions", transactions.length)
-      if (transactions.length > 0) {
-        theLastOrder = transactions[transactions.length-1]
-        // console.log("theLastOrder", theLastOrder)
-        lastOrder = `theLastOrder:${JSON.stringify(theLastOrder)}`
-      } else {
-        lastOrder = `lastOrder from coupled:${JSON.stringify(lastOrder)}`
-      }
-    }
-  statsMessageReply += `\n\nLast Order:\n${lastOrder}`
-
+    statsMessageReply += `\n\nLast Order:\n${lastOrder}`
 
   if (thePllayer?.mode > 0) {
-    console.log("binancekeys", thePllayer?.binancekeys, theLastOrder, "***\n\n\n***")
     if (!!thePllayer?.binancekeys) {
-      console.log("binancekeys", thePllayer)
       if (!!theLastOrder && (theLastOrder.isBuyer || theLastOrder.side.toLowerCase() == "buy")) {
-        console.log("ready to  buy -ready to  buy -ready to  buy -ready to  buy -ready to  buy -")
         await updateModeIfValid(supabase, queryText, null)
-        console.log("complete await updateModeIfValid(supabase, queryText)-")
-
         let side = "buy"
         let symbol = "BTCUSDT"
         let quantity = "0.001"
@@ -152,10 +139,7 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
         let orderSuccess = true
 
         if ((`${apikeypublic}${apikeysecret}`).length == 128) {
-          console.log(`apikeypublic ${apikeypublic}${apikeysecret}`)
           let theFinalTradeData = { side, symbol, quantity, price }
-          console.log("theFinalTradeDatatheFinalTradeData -", theFinalTradeData)
-          // throw Error("no orders in alpha")
           makeLimitOrder( theFinalTradeData, apikeypublic, apikeysecret,
             (result) => { 
               if (!result) { throw Error("no result in make limit order") }
