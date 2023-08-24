@@ -4,7 +4,8 @@ var crypto = require('crypto');
 const { fetchPlayerWithOrdersSubAndMode } = require('../repository/webrepo');
 // const { fetchPlayer, updateModeIfValid } = require('../../state/repository/webpov');
 const { executeFinalTrade, reconstructPlayer, getCurrentPrice } = require('./webserve');
-const { setupPlayerStatsMessageBody } = require('../../util/helper/webhelp');
+const { setupPlayerStatsMessageBody, shortHash } = require('../../util/helper/webhelp');
+const { getCouplesFromOrders } = require('../../util/helper/webhelp');
 
 async function generalQubUpdateMessage(supabase,queryText) {
   let thePllayers = []
