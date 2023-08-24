@@ -6,8 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const { Telegraf } = require('telegraf');
 const createError = require('http-errors')
 
-const { generalQubUpdateMessage } = require('./script/util/helper/player');
-const { getFinalTelegramCheckMessage } = require('./script/util/helper/player');
+const { generalQubUpdateMessage } = require('./script/state/service/webgram');
+const { getFinalTelegramCheckMessage } = require('./script/state/service/webgram');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
@@ -24,10 +24,11 @@ cron.schedule(
   // create_cron_datetime("*/3", '*', '*', '*', '*', '*'),
   async function() {
     const playerHash = "71e0306864eb7e22c2fc5b77104b1f3196769ac72f22a4cd0dd87d10ed28d2b0";
+    console.log(`...`)
 
     let finalMsg = await generalQubUpdateMessage(supabase, "")
     // const existingPlayer = await fetchPlayer(playerHash);
-    console.log("in the loop finalMsg", finalMsg);
+    // console.log("in the loop finalMsg", finalMsg);
     // console.log("in the loop", existingPlayer.subscription);
 
   }

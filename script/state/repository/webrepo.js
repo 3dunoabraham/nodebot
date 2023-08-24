@@ -20,7 +20,8 @@ async function fetchPlayerWithOrdersSubAndMode(supabase, playerHash) {
     // .single();
     // .select();
 
-    if (!selectError) {
+    if (!!selectError) {
+      // console.log("existingStart", existingStart)
       console.log("selectError", selectError)
     }
   return existingStart;
@@ -32,12 +33,12 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
     .select('mode, orders')
     .match({ hash: playerHash })
     .single();
-  console.log("playerDataplayerDataplayerDataplayerDataplayerDataplayerData", playerData)
-  console.log("playerDataplayerDataplayerDatanpm iplayerDataplayerDataplayerData", )
+  // console.log("playerDataplayerDataplayerDataplayerDataplayerDataplayerData", playerData)
+  // console.log("playerDataplayerDataplayerDatanpm iplayerDataplayerDataplayerData", )
   if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
 
     const orderTransactions = playerData.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
-    console.log("orderTransactions", orderTransactions)
+    // console.log("orderTransactions", orderTransactions)
     if (!orderTransactions) { return { success: false } }
 
     const { error: updateError } = await supabase
