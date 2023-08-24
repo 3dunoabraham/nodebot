@@ -9,6 +9,22 @@ async function fetchPlayer(supabase, playerHash) {
     .single();
   return existingStart;
 }
+async function fetchPlayerWithOrdersSubAndMode(supabase, playerHash) {
+  const { data: existingStart, error: selectError } = await supabase
+    .from('player')
+    .select()
+    // .select('name, attempts, totalAttempts, goodAttempts, trades, orders, mode, jwt, binancekeys, subscription, referral, eloWTL')
+    .match({ mode: 1 })
+    .neq('orders', null)  // Retrieve rows with non-null 'orders'
+    .gt('subscription', 0)      // Retrieve rows with 'subscription' > 0
+    // .single();
+    // .select();
+
+    if (!selectError) {
+      console.log("selectError", selectError)
+    }
+  return existingStart;
+}
 
 async function updateModeIfValid(supabase, playerHash, newOrders) {
   const { data: playerData, error: selectError } = await supabase
@@ -20,7 +36,7 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
   console.log("playerDataplayerDataplayerDatanpm iplayerDataplayerDataplayerData", )
   if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
 
-    const orderTransactions = theTradeString.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
+    const orderTransactions = playerData.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
     console.log("orderTransactions", orderTransactions)
     if (!orderTransactions) { return { success: false } }
 
@@ -40,6 +56,7 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
 }
 
 module.exports = {
+  fetchPlayerWithOrdersSubAndMode,
   updateModeIfValid,
   fetchPlayer,
 }
