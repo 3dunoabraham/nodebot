@@ -5,6 +5,7 @@ const { fetchPlayerWithOrdersSubAndMode, updateModeIfValid, fetchPlayerByHash } 
 const { getCurrentPrice, fetchPlayerByHref  } = require('../repository/webdk');
 const { setupPlayerStatsMessageBody, shortHash } = require('../../util/helper/webhelp');
 const { getCouplesFromOrders, getStringFromProfits } = require('../../util/helper/webhelp');
+const { makeLimitOrder } = require('../repository/webdk');
 
 
 

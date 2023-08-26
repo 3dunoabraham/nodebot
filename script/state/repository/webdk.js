@@ -1,6 +1,7 @@
 var https = require('https');
 var crypto = require('crypto');
 
+
 /* PLAYER SCOPES */
 const PS = {
   "fan": "",
@@ -187,4 +188,5 @@ module.exports = {
   fetchPlayerByHash,
   fetchPlayerWithOrdersSubAndMode,
   updateModeIfValid,
+  makeLimitOrder,
 }
