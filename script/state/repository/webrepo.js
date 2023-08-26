@@ -1,5 +1,26 @@
 
 
+
+async function fetchPlayerByHRef(supabase, playerHRef) {
+  const { data: existingStart, error: selectError } = await supabase
+    .from('player')
+    // .select()
+    .select('name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL')
+    .match({ href: playerHRef })
+    .single();
+  return existingStart;
+}
+
+
+async function fetchPlayerByRef(supabase, playerRef) {
+  const { data: existingStart, error: selectError } = await supabase
+    .from('player')
+    // .select()
+    .select('name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL')
+    .match({ referral: playerRef })
+    .single();
+  return existingStart;
+}
 async function fetchPlayer(supabase, playerHash) {
   const { data: existingStart, error: selectError } = await supabase
     .from('player')
@@ -60,4 +81,6 @@ module.exports = {
   fetchPlayerWithOrdersSubAndMode,
   updateModeIfValid,
   fetchPlayer,
+  fetchPlayerByRef,
+  fetchPlayerByHRef,
 }

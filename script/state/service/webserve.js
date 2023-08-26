@@ -1,7 +1,7 @@
 
 // const { generalLookupTable } = require('../../util/helper/webhelp');
 const { getCryptoPriceDecimals } = require('../../util/helper/webhelp');
-const { fetchPlayer, updateModeIfValid } = require('../repository/webrepo');
+const { fetchPlayer, fetchPlayerByRef, fetchPlayerByHRef, updateModeIfValid } = require('../repository/webrepo');
 const { getCouplesFromOrders } = require('../../util/helper/webhelp');
 
 var https = require('https');
@@ -60,6 +60,41 @@ async function reconstructPlayer(supabase,queryText) {
     thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
   }
 
+  return thePllayer
+}
+async function reconstructPlayerByHref(supabase,queryText) {
+  
+  let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
+
+
+  // fetch player
+  try {
+    thePllayer = await fetchPlayerByHRef(supabase, queryText)
+    let anotherString = ""
+    let tradesString = thePllayer.trades
+    // theTradeString = tradesString
+    // console.log("fetchPlayerByHReffetchPlayerByHReffetchPlayerByHRef", thePllayer)
+    if (!!tradesString) {
+      // console.log("preeeeee getCouplesFromOrders",)
+      let tradesList2 = getCouplesFromOrders(tradesString)
+      let profitTradeList = tradesList2.filter((aTrade) => (aTrade.profitLoss > 0))
+      let profitableTradeString = ""
+      try {
+        profitableTradeString = getStringFromProfits(profitTradeList)
+      } catch (error) {
+        console.log("error while getStringFromProfits")
+      }
+      console.log("preeeeee filter",)
+      thePllayer.trades = anotherString + profitableTradeString
+      // console.log("fetchPlayerByHReffetchPlayerByHReffetchPlayerByHRef", thePllayer)
+
+    }
+
+  } catch (error) {
+    thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
+  }
+
+  console.log("fetchPlayerByHReffetchPlayerByHReffetchPlayerByHRef", thePllayer)
   return thePllayer
 }
 
@@ -185,4 +220,5 @@ module.exports = {
   executeFinalTrade,
   generateInlineResults,
   getCurrentPrice,
+  reconstructPlayerByHref,
 }

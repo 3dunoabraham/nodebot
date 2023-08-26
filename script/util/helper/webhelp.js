@@ -68,7 +68,7 @@ function getStringFromProfits (tradeCouples) {
 }
 
 
-async function setupPlayerStatsMessageBody(thePllayer) {
+function setupPlayerStatsMessageBody(thePllayer) {
   let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
   statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
   statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`

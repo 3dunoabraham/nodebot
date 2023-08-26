@@ -3,11 +3,53 @@ var https = require('https');
 var crypto = require('crypto');
 const { fetchPlayerWithOrdersSubAndMode } = require('../repository/webrepo');
 // const { fetchPlayer, updateModeIfValid } = require('../../state/repository/webpov');
-const { executeFinalTrade, reconstructPlayer, getCurrentPrice } = require('./webserve');
+const { executeFinalTrade, reconstructPlayer, reconstructPlayerByHref, getCurrentPrice } = require('./webserve');
 const { setupPlayerStatsMessageBody, shortHash } = require('../../util/helper/webhelp');
 const { getCouplesFromOrders } = require('../../util/helper/webhelp');
 
 async function generalQubUpdateMessage(supabase,queryText) {
+  let thePllayers = []
+  let theLastOrder = null
+  let triggeredOrders = ""
+  // fetch player
+  try {
+    thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase, queryText)
+    if (thePllayers.length > 0) {
+      thePllayers.map(async (thePllayer)=>{
+        let lastOrder = ''
+        const transactions = !!thePllayer.orders ? (
+          thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
+        ) : []
+        if (transactions.length > 0) {
+          theLastOrder = transactions[transactions.length-1]
+          lastOrder = `theLastOrder:${JSON.stringify(theLastOrder)}`
+        }
+        if (!lastOrder) return
+        if (!theLastOrder) return
+        let currentPrrr = await getCurrentPrice()
+        // console.log("currentPrrrcurrentPrrr", currentPrrr)
+        if (currentPrrr < theLastOrder.price) {
+          // console.log(`${thePllayer.hash} \n should \n trigger`)
+          triggeredOrders += `|||${JSON.stringify(theLastOrder)}`
+          // await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
+          // console.log(`${thePllayer.hash} \n theLastOrder`)
+        } else {
+          console.log(`${Date.now()} some are pending | \n ******`)
+          // console.log(`${thePllayer.hash} | ${theLastOrder.price} \n pending ***`)
+        }
+      })      
+    }
+    // console.log("post", thePllayers)
+
+  } catch (error) {
+    // console.log("error", error)
+    thePllayers = []
+  }
+
+  return `${thePllayers.map((anItem,index)=>(JSON.stringify(anItem.hash))).join("\n")} \n\n
+  triggered Orders ${triggeredOrders}`
+}
+async function generalQubTradeMessage(supabase,queryText) {
   let thePllayers = []
   let theLastOrder = null
   let triggeredOrders = ""
@@ -52,7 +94,12 @@ async function generalQubUpdateMessage(supabase,queryText) {
 
 async function getFinalTelegramCheckMessage(supabase,queryText) {
   let theLastOrder = null
-  let thePllayer = await reconstructPlayer(supabase,queryText)
+  console.log("****************************************")
+  let thePllayer = await reconstructPlayerByHref(supabase,queryText)
+  console.log("reconstructPlayerByHref")
+  console.log("egfegegeg" , thePllayer)
+  console.log("reconstructPlayerByHref")
+  // let thePllayer = await reconstructPlayer(supabase,queryText)
   let theMessageReply = `Check-in: #${shortHash(queryText)}`
   let statsMessageReply = setupPlayerStatsMessageBody(thePllayer)
   let theOrdersList = getCouplesFromOrders(thePllayer.orders)
@@ -78,4 +125,5 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
 module.exports = {
   getFinalTelegramCheckMessage,
   generalQubUpdateMessage,
+  generalQubTradeMessage,
 }

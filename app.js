@@ -6,7 +6,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { Telegraf } = require('telegraf');
 const createError = require('http-errors')
 
-const { generalQubUpdateMessage } = require('./script/state/service/webgram');
+const { generalQubUpdateMessage, generalQubTradeMessage } = require('./script/state/service/webgram');
 const { getFinalTelegramCheckMessage } = require('./script/state/service/webgram');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,15 +47,22 @@ bot.command('web', async (ctx) => {
   let theTradeString = ""
   console.log("command", command)
   if (command === 'pov') {
-    const queryText = args[2]; // Extract the user hash after "pov"
-    if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
+    const queryText = args[2]; // Extract the user href
+    // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
+    console.log("getFinalTelegramCheckMessage", queryText)
     let finalMsg = await getFinalTelegramCheckMessage(supabase, queryText)
     ctx.reply(finalMsg)
   } else if (command === 'qub') {
-    const queryText = args[2]; // Extract the user hash after "pov"
+    const queryText = args[2]; // Extract nothing
     // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
     let finalMsg = ""
     finalMsg = await generalQubUpdateMessage(supabase, queryText)
+    ctx.reply(`|${finalMsg}|`)
+  } else if (command === 'trade') {
+    const queryText = args[2]; // Extract the user hash after "pov"
+    if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
+    let finalMsg = ""
+    finalMsg = await generalQubTradeMessage(supabase, queryText)
     ctx.reply(`|${finalMsg}|`)
   } else {
     ctx.reply('Invalid sub-app.\nAvailable sub-apps: pov, qub, city, town');
