@@ -3,10 +3,18 @@ var https = require('https');
 var crypto = require('crypto');
 const { fetchPlayerWithOrdersSubAndMode, updateModeIfValid, fetchPlayerByHash } = require('../repository/webdk');
 const { getCurrentPrice, fetchPlayerByHref  } = require('../repository/webdk');
-const { setupPlayerStatsMessageBody, shortHash } = require('../../util/helper/webhelp');
-const { getCouplesFromOrders, getStringFromProfits } = require('../../util/helper/webhelp');
+const { shortHash } = require('../repository/webhelp');
+const { getCouplesFromOrders, getStringFromProfits } = require('../repository/webhelp');
 const { makeLimitOrder } = require('../repository/webdk');
 
+
+
+function setupPlayerStatsMessageBody(thePllayer) {
+  let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
+  statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
+  statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
+  return statsMessageReply
+}
 
 
 
@@ -248,5 +256,5 @@ module.exports = {
   reconstructPlayer,
   generateInlineResults,
   reconstructPlayerByHref,
-
+  setupPlayerStatsMessageBody,
 }

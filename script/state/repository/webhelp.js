@@ -1,3 +1,58 @@
+const crypto = require('crypto')
+
+
+const PS = {
+  "fan": "",
+  "guest": "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL, href",
+  "player": "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, jwt, binancekeys, subscription, referral, eloWTL",
+  "user": "",
+}
+
+const qtyLookupTable = {
+  'BTCUSDT': 3,'ETHUSDT': 4,'BNBUSDT': 4,'USDTUSDT': 4,'ADAUSDT': 4,'DOGEUSDT': 8,
+  'XRPUSDT': 4,'DOTUSDT': 4,'LINKUSDT': 3,'FTMUSDT': 4,'UNIUSDT': 4,'SOLUSDT': 4,
+};
+
+const priceLookupTable = {
+  'BTCUSDT': 1,'ETHUSDT': 5,'BNBUSDT': 4,'USDTUSDT': 4,'ADAUSDT': 4,
+  'DOGEUSDT': 8,'XRPUSDT': 4,'DOTUSDT': 4,'LINKUSDT': 3,'FTMUSDT': 4,
+  'UNIUSDT': 4,'SOLUSDT': 4,
+};
+
+const generalLookupTable = {
+  'BTC': 1,'ETH': 5,'BNB': 4,'USDT': 4,'ADA': 4,'DOGE': 8,
+  'XRP': 4,'DOT': 4,'LINK': 3,'FTM': 4,'UNI': 4,'SOL': 4,
+};
+
+function getCryptoPriceDecimals(symbol) {
+  return generalLookupTable[symbol] || 2;
+}
+
+function computeHash(firstValue, secondValue) {
+
+  const hash = crypto.createHash('sha256');
+
+  hash.update(firstValue.toLowerCase().replace(" ", ""));
+  hash.update(secondValue.toLowerCase().replace(" ", ""));
+  const hash_digest = hash.digest('hex');
+
+
+  return hash_digest
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function shortHash(address)
@@ -5,21 +60,6 @@ function shortHash(address)
   return address.substr(0,4)+"..."+address.substr(address.length-4,address.length)
 }
 
-
-const priceLookupTable = {
-  'BTCUSDT': 1,
-  'ETHUSDT': 5,
-  'BNBUSDT': 4,
-  'USDTUSDT': 4,
-  'ADAUSDT': 4,
-  'DOGEUSDT': 8,
-  'XRPUSDT': 4,
-  'DOTUSDT': 4,
-  'LINKUSDT': 3,
-  'FTMUSDT': 4,
-  'UNIUSDT': 4,
-  'SOLUSDT': 4,
-};
 
 function adjustOrderParams({ side, symbol, quantity, price }) {
   const pricedecimalPlaces = priceLookupTable[symbol.toUpperCase()] || 2;
@@ -68,30 +108,6 @@ function getStringFromProfits (tradeCouples) {
 }
 
 
-function setupPlayerStatsMessageBody(thePllayer) {
-  let statsMessageReply = `Attempts <Avail. / Total - Good>: ${thePllayer.attempts} / ${thePllayer.totalAttempts} - ${thePllayer.goodAttempts}`
-  statsMessageReply += `\nELO: ${thePllayer.eloWTL}`
-  statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
-  return statsMessageReply
-}
-const generalLookupTable= {
-  'BTC': 1,
-  'ETH': 5,
-  'BNB': 4,
-  'USDT': 4,
-  'ADA': 4,
-  'DOGE': 8,
-  'XRP': 4,
-  'DOT': 4,
-  'LINK': 3,
-  'FTM': 4,
-  'UNI': 4,
-  'SOL': 4,
-};
-const getCryptoPriceDecimals = (symbol) => {
-  return generalLookupTable[symbol] || 2;
-}
-
 module.exports = {
   getCouplesFromOrders,
   getStringFromProfits,
@@ -100,5 +116,8 @@ module.exports = {
   getCryptoPriceDecimals,
   shortHash,
   generalLookupTable,
-  setupPlayerStatsMessageBody,
+  PS,
+  qtyLookupTable,
+  getCryptoPriceDecimals,
+  computeHash,
 }
