@@ -45,13 +45,15 @@ bot.command('web', async (ctx) => {
   if (command === 'pov') {
     const queryText = args[2]; // Extract the user href
     // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
-    console.log("getFinalTelegramCheckMessage", queryText)
+    // console.log("getFinalTelegramCheckMessage", queryText)
     let finalMsg = await getFinalTelegramCheckMessage(supabase, queryText)
     ctx.reply(finalMsg)
   } else if (command === 'qub') {
     const queryText = args[2]; // Extract nothing
     // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
     let finalMsg = ""
+    // console.log("fetchPlayerWithOrdersSubAndModefetchPlayerWithOrdersSubAndModefetchPlayerWithOrdersSubAndMode")
+
     finalMsg = await generalQubUpdateMessage(supabase, queryText)
     ctx.reply(`|${finalMsg}|`)
   } else if (command === 'trade') {
