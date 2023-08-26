@@ -2,15 +2,15 @@ require('dotenv').config()
 const cron = require("node-cron");
 const express = require('express')
 const morgan = require('morgan')
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('./script/state/repository/webdk');
 const { Telegraf } = require('telegraf');
 const createError = require('http-errors')
 
 const { generalQubUpdateMessage, generalQubTradeMessage } = require('./script/state/service/webgram');
 const { getFinalTelegramCheckMessage } = require('./script/state/service/webgram');
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+
+
+const supabase = getSupabaseClient();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 /* Telegram Bot & Group *****************************************************************************************************/
@@ -44,16 +44,11 @@ bot.command('web', async (ctx) => {
   console.log("command", command)
   if (command === 'pov') {
     const queryText = args[2]; // Extract the user href
-    // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
-    // console.log("getFinalTelegramCheckMessage", queryText)
     let finalMsg = await getFinalTelegramCheckMessage(supabase, queryText)
     ctx.reply(finalMsg)
   } else if (command === 'qub') {
     const queryText = args[2]; // Extract nothing
-    // if (queryText.length != 64) { return ctx.reply(`Invalid hash:\n${queryText}`) }
     let finalMsg = ""
-    // console.log("fetchPlayerWithOrdersSubAndModefetchPlayerWithOrdersSubAndModefetchPlayerWithOrdersSubAndMode")
-
     finalMsg = await generalQubUpdateMessage(supabase, queryText)
     ctx.reply(`|${finalMsg}|`)
   } else if (command === 'trade') {
@@ -67,12 +62,6 @@ bot.command('web', async (ctx) => {
   }
 });
 
-// bot.on('inline_query', async (ctx) => {
-//   const queryText = ctx.update.inline_query.query;
-
-//   const results = await generateInlineResults(queryText);
-//   await ctx.answerInlineQuery(results);
-// });
 
 bot.launch();
 // Enable graceful stop
@@ -106,3 +95,10 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`🚀 @ http://localhost:${PORT}`))
+
+// bot.on('inline_query', async (ctx) => {
+//   const queryText = ctx.update.inline_query.query;
+
+//   const results = await generateInlineResults(queryText);
+//   await ctx.answerInlineQuery(results);
+// });

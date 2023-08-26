@@ -29,17 +29,25 @@ function getCryptoPriceDecimals(symbol) {
 }
 
 function computeHash(firstValue, secondValue) {
-
   const hash = crypto.createHash('sha256');
-
   hash.update(firstValue.toLowerCase().replace(" ", ""));
   hash.update(secondValue.toLowerCase().replace(" ", ""));
   const hash_digest = hash.digest('hex');
-
-
   return hash_digest
 }
 
+function parseQuantity(symbol, quantity) {
+  const qtydecimalPlaces = qtyLookupTable[symbol] || 2;
+  return Number(parseFloat(`${quantity}`).toFixed(qtydecimalPlaces));
+}
+
+function adjustOrderParams({ side, symbol, quantity, price }) {
+  const pricedecimalPlaces = priceLookupTable[symbol.toUpperCase()] || 2;
+  const adjustedQuantity = parseQuantity(symbol.toUpperCase(), quantity / price);
+  const adjustedPrice = Number((parseFloat(`${price}`)).toFixed(pricedecimalPlaces));
+
+  return { quantity: adjustedQuantity, price: adjustedPrice };
+}
 
 
 
@@ -61,14 +69,6 @@ function shortHash(address)
 }
 
 
-function adjustOrderParams({ side, symbol, quantity, price }) {
-  const pricedecimalPlaces = priceLookupTable[symbol.toUpperCase()] || 2;
-  const adjustedQuantity = parseQuantity(symbol.toUpperCase(), quantity / price);
-  const adjustedPrice = Number((parseFloat(`${price}`)).toFixed(pricedecimalPlaces));
-
-  return { quantity: adjustedQuantity, price: adjustedPrice };
-}
-
 function getCouplesFromOrders(transactionString) {
   if (!transactionString) return []
   const transactions = transactionString.split('&&&').filter(Boolean);
@@ -77,7 +77,6 @@ function getCouplesFromOrders(transactionString) {
   transactions.forEach((transaction) => {
     try {
       const trade = JSON.parse(transaction);
-      // console.log("trade", trade)
       const { symbol, isBuyer, price, qty } = trade;
       if (isBuyer) {
         if (!trades[symbol]) { trades[symbol] = []; }
@@ -120,4 +119,5 @@ module.exports = {
   qtyLookupTable,
   getCryptoPriceDecimals,
   computeHash,
+  parseQuantity,
 }

@@ -1,12 +1,8 @@
-
-var https = require('https');
-var crypto = require('crypto');
 const { fetchPlayerWithOrdersSubAndMode, updateModeIfValid, fetchPlayerByHash } = require('../repository/webdk');
 const { getCurrentPrice, fetchPlayerByHref  } = require('../repository/webdk');
 const { shortHash } = require('../repository/webhelp');
 const { getCouplesFromOrders, getStringFromProfits } = require('../repository/webhelp');
 const { makeLimitOrder } = require('../repository/webdk');
-
 
 
 function setupPlayerStatsMessageBody(thePllayer) {
@@ -15,9 +11,6 @@ function setupPlayerStatsMessageBody(thePllayer) {
   statsMessageReply += `\n\nProfits:\n${thePllayer.trades}`
   return statsMessageReply
 }
-
-
-
 
 async function executeFinalTrade(supabase, queryText, theLastOrder, thePllayer) {
   if (thePllayer?.mode > 0 && !!thePllayer?.binancekeys) {
@@ -48,13 +41,8 @@ async function executeFinalTrade(supabase, queryText, theLastOrder, thePllayer) 
   }
 }
 
-
-async function reconstructPlayer(supabase,queryText) {
-  
+async function reconstructPlayer(supabase,queryText) {  
   let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
-
-
-  // fetch player
   try {
     thePllayer = await fetchPlayerByHash(supabase, queryText)
     let anotherString = ""
@@ -64,19 +52,14 @@ async function reconstructPlayer(supabase,queryText) {
     let profitTradeList = tradesList2.filter((aTrade) => (aTrade.profitLoss > 0))
     let profitableTradeString = getStringFromProfits(profitTradeList)
     thePllayer.trades = anotherString + profitableTradeString
-
   } catch (error) {
     thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
   }
-
   return thePllayer
 }
-async function reconstructPlayerByHref(supabase,queryText) {
-  
+
+async function reconstructPlayerByHref(supabase,queryText) {  
   let thePllayer = {trades:`guest #|${queryText}|`,subscription:0}
-
-
-  // fetch player
   try {
     thePllayer = await fetchPlayerByHref(supabase, queryText)
     let anotherString = ""
@@ -91,13 +74,10 @@ async function reconstructPlayerByHref(supabase,queryText) {
         console.log("error while getStringFromProfits")
       }
       thePllayer.trades = anotherString + profitableTradeString
-
     }
-
   } catch (error) {
     thePllayer = {trades:`unnamed #|${queryText}|`,subscription:0}
   }
-
   return thePllayer
 }
 
@@ -114,14 +94,11 @@ async function generateInlineResults(queryText) {
       message_text: `You entered: ${queryText} \nYou got: ${randdd}`,
     },
   };
-  
-  // const foundHardcode = hardcode[queryText]
   let thePllayer = null;
   try {
     thePllayer = await fetchPlayerByHash(queryText)
   } catch (error) {
-    thePllayer = {name:`player not found |${queryText}|`,subscription:0}
-    
+    thePllayer = {name:`player not found |${queryText}|`,subscription:0}    
   }
   const betterResult = !thePllayer?.subscription ? textResult : {
     type: 'article',
@@ -135,9 +112,6 @@ async function generateInlineResults(queryText) {
 
   return results;
 }
-
-
-
 
 async function generalQubUpdateMessage(supabase,queryText) {
   let thePllayers = []
@@ -165,10 +139,8 @@ async function generalQubUpdateMessage(supabase,queryText) {
         }
       })      
     }
-    // console.log("post", thePllayers)
 
   } catch (error) {
-    // console.log("error", error)
     thePllayers = []
   }
 
@@ -179,7 +151,6 @@ async function generalQubTradeMessage(supabase,queryText) {
   let thePllayers = []
   let theLastOrder = null
   let triggeredOrders = ""
-  // fetch player
   try {
     thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase)
     if (thePllayers.length > 0) {
@@ -195,22 +166,16 @@ async function generalQubTradeMessage(supabase,queryText) {
         if (!lastOrder) return
         if (!theLastOrder) return
         let currentPrrr = await getCurrentPrice()
-        // console.log("currentPrrrcurrentPrrr", currentPrrr)
         if (currentPrrr < theLastOrder.price) {
-          // console.log(`${thePllayer.hash} \n should \n trigger`)
           triggeredOrders += `|||${JSON.stringify(theLastOrder)}`
           await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
-          // console.log(`${thePllayer.hash} \n theLastOrder`)
         } else {
           console.log(`${Date.now()} some are pending | \n ******`)
-          // console.log(`${thePllayer.hash} | ${theLastOrder.price} \n pending ***`)
         }
       })      
     }
-    // console.log("post", thePllayers)
 
   } catch (error) {
-    // console.log("error", error)
     thePllayers = []
   }
 
@@ -220,16 +185,11 @@ async function generalQubTradeMessage(supabase,queryText) {
 
 async function getFinalTelegramCheckMessage(supabase,queryText) {
   let theLastOrder = null
-  // console.log("****************************************")
   let thePllayer = await reconstructPlayerByHref(supabase,queryText)
-  // console.log("reconstructPlayerByHref")
-  // console.log("egfequeryTextqueryTextgegeg" , queryText, thePllayer)
-  // let thePllayer = await reconstructPlayer(supabase,queryText)
   let theMessageReply = `Check-in: #${shortHash(queryText)}`
   let statsMessageReply = setupPlayerStatsMessageBody(thePllayer)
   let theOrdersList = getCouplesFromOrders(thePllayer.orders)
   let lastOrder = theOrdersList.length > 0 ? theOrdersList[theOrdersList.length-1] : {}
-  // console.log("reconstructPlayerByHrefreconstructPlayerByHref")
   if ("startHash" in lastOrder) { delete lastOrder["startHash"] }
   const transactions = !!thePllayer.orders ? (
     thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
@@ -243,8 +203,6 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
   statsMessageReply += `\n\nLast Order:\n${lastOrder}`
 
   await executeFinalTrade(supabase, queryText, theLastOrder, thePllayer);
-  // console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-
   return (`${theMessageReply}\n${statsMessageReply}\n\nStatus: ${!!thePllayer?.subscription ? "VIP" : "GUEST"} || ${thePllayer?.mode > 0 ? "mode:"+thePllayer?.mode : "idle"}`);
 }
 

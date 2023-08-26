@@ -1,3 +1,4 @@
+const { createClient } = require('@supabase/supabase-js');
 var https = require('https');
 var crypto = require('crypto');
 var {
@@ -9,21 +10,17 @@ var {
 } = require('./webhelp')
 
 
+const getSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } })
+  return supabase
+}
 
 /* EXCHANGE */
 /************************************************************************************************************/
-function makeLimitOrder({ side, symbol, quantity, price, recvWindow = 5000, timestamp = Date.now() }, apiKey, apiSecret, callback) {
-  // if (apiKey === "user") {
-  //   const chatId = process.env.TELEGRAM_CHAT_ID;
-  //   const token = process.env.TELEGRAM_BOT_TOKEN;
-
-  //   // const message = `Demo API Key @${chatId} | w${token} \n\n\n\n  used to place an order:\nSide: ${side}\nSymbol: ${symbol}\nQuantity: ${quantity}\nPrice: ${price}\n`;    
-  //   // const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${message}`;
-  //   // https.get(url);
-  //   callback(false);
-  //   return;
-  // }
-
+function makeLimitOrder(
+  { side, symbol, quantity, price, recvWindow = 5000, timestamp = Date.now() }, apiKey, apiSecret, callback) {
   const options = {
     hostname: 'api.binance.com',
     port: 443,
@@ -38,7 +35,9 @@ function makeLimitOrder({ side, symbol, quantity, price, recvWindow = 5000, time
   if (!_price) {
     return null
   }
-  const params = `symbol=${symbol}&side=${side}&type=LIMIT&timeInForce=GTC&quantity=${quantity}&price=${_price}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
+  const params = (`symbol=${symbol}&side=${side}&type=LIMIT&timeInForce=GTC&quantity=${quantity}`+
+    `&price=${_price}&recvWindow=${recvWindow}&timestamp=${timestamp}`
+  )
   const signature = crypto.createHmac('sha256', apiSecret).update(params).digest('hex');
   const data = `${params}&signature=${signature}`;
   const req = https.request(options, (res) => {
@@ -56,12 +55,6 @@ function makeLimitOrder({ side, symbol, quantity, price, recvWindow = 5000, time
   req.write(data);
   req.end();
 }
-
-
-
-
-
-
 
 const getCurrentPrice = async (requestToken) => {
   let theToken = requestToken || "BTCUSDT";
@@ -154,7 +147,6 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
 }
 
 
-
 module.exports = {
   getCurrentPrice,
   fetchPlayerByHref,
@@ -162,8 +154,19 @@ module.exports = {
   fetchPlayerWithOrdersSubAndMode,
   updateModeIfValid,
   makeLimitOrder,
+  getSupabaseClient,
   getCryptoPriceDecimals,
   qtyLookupTable,
   priceLookupTable,
   generalLookupTable,
 }
+  // if (apiKey === "user") {
+  //   const chatId = process.env.TELEGRAM_CHAT_ID;
+  //   const token = process.env.TELEGRAM_BOT_TOKEN;
+
+  //   // const message = `Demo API Key @${chatId} | w${token} \n\n\n\n  used to place an order:\nSide: ${side}\nSymbol: ${symbol}\nQuantity: ${quantity}\nPrice: ${price}\n`;    
+  //   // const url = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${message}`;
+  //   // https.get(url);
+  //   callback(false);
+  //   return;
+  // }
