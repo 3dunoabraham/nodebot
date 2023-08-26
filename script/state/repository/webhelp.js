@@ -1,6 +1,3 @@
-const crypto = require('crypto')
-
-
 const PS = {
   "fan": "",
   "guest": "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL, href",
@@ -28,8 +25,8 @@ function getCryptoPriceDecimals(symbol) {
   return generalLookupTable[symbol] || 2;
 }
 
-function computeHash(firstValue, secondValue) {
-  const hash = crypto.createHash('sha256');
+function computeHash(firstValue, secondValue, createHash) {
+  const hash = createHash('sha256');
   hash.update(firstValue.toLowerCase().replace(" ", ""));
   hash.update(secondValue.toLowerCase().replace(" ", ""));
   const hash_digest = hash.digest('hex');
