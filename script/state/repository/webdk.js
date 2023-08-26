@@ -7,7 +7,7 @@ var {
   priceLookupTable,
   generalLookupTable,
   getCryptoPriceDecimals,
-} = require('./webhelp')
+} = require('../../util/webhelp')
 
 
 const getSupabaseClient = () => {
