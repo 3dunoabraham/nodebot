@@ -2,7 +2,6 @@
 var https = require('https');
 var crypto = require('crypto');
 const { fetchPlayerWithOrdersSubAndMode } = require('../repository/webrepo');
-// const { fetchPlayer, updateModeIfValid } = require('../../state/repository/webpov');
 const { executeFinalTrade, reconstructPlayer, reconstructPlayerByHref, getCurrentPrice } = require('./webserve');
 const { setupPlayerStatsMessageBody, shortHash } = require('../../util/helper/webhelp');
 const { getCouplesFromOrders } = require('../../util/helper/webhelp');
@@ -11,9 +10,8 @@ async function generalQubUpdateMessage(supabase,queryText) {
   let thePllayers = []
   let theLastOrder = null
   let triggeredOrders = ""
-  // fetch player
   try {
-    thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase, queryText)
+    thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase)
     if (thePllayers.length > 0) {
       thePllayers.map(async (thePllayer)=>{
         let lastOrder = ''
@@ -27,15 +25,10 @@ async function generalQubUpdateMessage(supabase,queryText) {
         if (!lastOrder) return
         if (!theLastOrder) return
         let currentPrrr = await getCurrentPrice()
-        // console.log("currentPrrrcurrentPrrr", currentPrrr)
         if (currentPrrr < theLastOrder.price) {
-          // console.log(`${thePllayer.hash} \n should \n trigger`)
           triggeredOrders += `|||${JSON.stringify(theLastOrder)}`
-          // await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
-          // console.log(`${thePllayer.hash} \n theLastOrder`)
         } else {
           console.log(`${Date.now()} some are pending | \n ******`)
-          // console.log(`${thePllayer.hash} | ${theLastOrder.price} \n pending ***`)
         }
       })      
     }
@@ -55,7 +48,7 @@ async function generalQubTradeMessage(supabase,queryText) {
   let triggeredOrders = ""
   // fetch player
   try {
-    thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase, queryText)
+    thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase)
     if (thePllayers.length > 0) {
       thePllayers.map(async (thePllayer)=>{
         let lastOrder = ''
@@ -96,9 +89,9 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
   let theLastOrder = null
   console.log("****************************************")
   let thePllayer = await reconstructPlayerByHref(supabase,queryText)
-  console.log("reconstructPlayerByHref")
-  console.log("egfegegeg" , thePllayer)
-  console.log("reconstructPlayerByHref")
+  // console.log("reconstructPlayerByHref")
+  // console.log("egfegegeg" , thePllayer)
+  // console.log("reconstructPlayerByHref")
   // let thePllayer = await reconstructPlayer(supabase,queryText)
   let theMessageReply = `Check-in: #${shortHash(queryText)}`
   let statsMessageReply = setupPlayerStatsMessageBody(thePllayer)

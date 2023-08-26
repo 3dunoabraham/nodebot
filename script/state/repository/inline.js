@@ -1,4 +1,4 @@
-const { fetchPlayer } = require('./player');
+const { fetchPlayerByHash } = require('./player');
 
 async function generateInlineResults22(queryText,randdd) {
   const results = [];
@@ -16,7 +16,7 @@ async function generateInlineResults22(queryText,randdd) {
   // const foundHardcode = hardcode[queryText]
   let thePllayer = null;
   try {
-    thePllayer = await fetchPlayer(queryText)
+    thePllayer = await fetchPlayerByHash(queryText)
   } catch (error) {
     thePllayer = {name:`player not found`,subscription:0}
     
