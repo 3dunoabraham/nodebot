@@ -1,7 +1,8 @@
+const PS_CORE = "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL, href"
 const PS = {
   "fan": "",
   "guest": "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, subscription, referral, eloWTL, href",
-  "player": "name, attempts, totalAttempts, goodAttempts, trades, orders, mode, jwt, binancekeys, subscription, referral, eloWTL",
+  "player": "name, attempts, totalAttempts, hash, goodAttempts, trades, orders, mode, jwt, binancekeys, subscription, referral, eloWTL",
   "user": "",
 }
 
@@ -112,6 +113,7 @@ module.exports = {
   getCryptoPriceDecimals,
   shortHash,
   generalLookupTable,
+  PS_CORE,
   PS,
   qtyLookupTable,
   getCryptoPriceDecimals,

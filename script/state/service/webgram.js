@@ -1,5 +1,5 @@
 const { fetchPlayerWithOrdersSubAndMode, updateModeIfValid, fetchPlayerByHash } = require('../repository/webdk');
-const { getCurrentPrice, fetchPlayerByHref  } = require('../repository/webdk');
+const { getCurrentPrice, fetchPlayerByHref, rewriteMode, fetchPlayerByHrefAndSrc  } = require('../repository/webdk');
 const { shortHash } = require('../../util/webhelp');
 const { getCouplesFromOrders, getStringFromProfits } = require('../../util/webhelp');
 const { makeLimitOrder } = require('../repository/webdk');
@@ -12,14 +12,15 @@ function setupPlayerStatsMessageBody(thePllayer) {
   return statsMessageReply
 }
 
-async function executeFinalTrade(supabase, queryText, theLastOrder, thePllayer) {
+async function executeFinalTrade(supabase, queryText, orderData, thePllayer) {
   if (thePllayer?.mode > 0 && !!thePllayer?.binancekeys) {
-    if (!!theLastOrder && (theLastOrder.isBuyer || theLastOrder.side.toLowerCase() == "buy")) {
-      await updateModeIfValid(supabase, queryText, null);
-      let side = "buy";
+    // if (!!orderData && (orderData.isBuyer || orderData.side.toLowerCase() == "buy")) {
+    if (!!orderData) {
+      await updateModeIfValid(supabase, queryText, thePllayer.orders);
+      let side = orderData.side
       let symbol = "BTCUSDT";
       let quantity = "0.001";
-      let price = theLastOrder.price;
+      let price = orderData.price;
       let apikeypublic = thePllayer.binancekeys.split(":")[0] || "";
       let apikeysecret = thePllayer.binancekeys.split(":")[1] || "";
 
@@ -113,28 +114,42 @@ async function generateInlineResults(queryText) {
   return results;
 }
 
-async function generalQubUpdateMessage(supabase,queryText) {
+async function cronUpdatesDatabase(supabase,queryText) {
   let thePllayers = []
+  let theFirstOrder = null
   let theLastOrder = null
   let triggeredOrders = ""
   try {
     thePllayers = await fetchPlayerWithOrdersSubAndMode(supabase)
     if (thePllayers.length > 0) {
       thePllayers.map(async (thePllayer)=>{
+        let firstOrder = ''
         let lastOrder = ''
         const transactions = !!thePllayer.orders ? (
           thePllayer.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder))
         ) : []
         if (transactions.length > 0) {
+          theFirstOrder = transactions[0]
           theLastOrder = transactions[transactions.length-1]
-          lastOrder = `theLastOrder:${JSON.stringify(theLastOrder)}`
+          firstOrder = `theFirstOrder:${JSON.stringify(theFirstOrder)}`
+          lastOrder = `theFirstOrder:${JSON.stringify(theLastOrder)}`
         }
         if (!lastOrder) return
-        if (!theLastOrder) return
+        if (!firstOrder) return
+        if (!theFirstOrder) return
         let currentPrrr = await getCurrentPrice()
-        if (currentPrrr < theLastOrder.price) {
+        // console.log("123****-*-*", currentPrrr < theFirstOrder.price, currentPrrr > theLastOrder.price)
+        if (currentPrrr < theFirstOrder.price) {
+          triggeredOrders += `|||${JSON.stringify(theFirstOrder)}`
+          await executeFinalTrade(supabase, thePllayer.hash, theFirstOrder, thePllayer)
+        } else if (currentPrrr > theLastOrder.price) {
           triggeredOrders += `|||${JSON.stringify(theLastOrder)}`
+          await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
         } else {
+          // console.log("if (thePllayer.mode == -1) {",)
+          if (thePllayer.mode == -1) {
+            await rewriteMode(supabase, thePllayer.hash, 1)
+          }
           console.log(`${Date.now()} ******`)
         }
       })      
@@ -182,8 +197,20 @@ async function generalQubTradeMessage(supabase,queryText) {
   return `${thePllayers.map((anItem,index)=>(JSON.stringify(anItem.hash))).join("\n")} \n\n
   triggered Orders ${triggeredOrders}`
 }
+async function updatePlayerMode(supabase,queryText, newVal, ctx_message_from_id) {
+  // console.log("ctx_message_from_id", ctx_message_from_id)
+  let thePllayer = null;
+  try {
+    thePllayer = await fetchPlayerByHrefAndSrc(supabase, queryText, ctx_message_from_id)
+  } catch (error) {
+    thePllayer = {name:`player not found |${queryText}|`,subscription:0}    
+  }
 
-async function getFinalTelegramCheckMessage(supabase,queryText) {
+  let updateRes = await rewriteMode(supabase, thePllayer.hash, newVal)
+  return updateRes ? `mode change: success \n ${newVal}` : 'failed to set mode'
+}
+
+async function povCheckIn(supabase,queryText) {
   let theLastOrder = null
   let thePllayer = await reconstructPlayerByHref(supabase,queryText)
   let theMessageReply = `Check-in: #${shortHash(queryText)}`
@@ -202,7 +229,7 @@ async function getFinalTelegramCheckMessage(supabase,queryText) {
   }
   statsMessageReply += `\n\nLast Order:\n${lastOrder}`
 
-  await executeFinalTrade(supabase, queryText, theLastOrder, thePllayer);
+  // await executeFinalTrade(supabase, queryText, theLastOrder, thePllayer);
   return (`${theMessageReply}\n${statsMessageReply}\n\nStatus: ${!!thePllayer?.subscription ? "VIP" : "GUEST"} || ${thePllayer?.mode > 0 ? "mode:"+thePllayer?.mode : "idle"}`);
 }
 
@@ -241,12 +268,13 @@ async function generateInlineResults22(queryText,randdd) {
 }
 
 module.exports = {
-  getFinalTelegramCheckMessage,
-  generalQubUpdateMessage,
+  povCheckIn,
+  cronUpdatesDatabase,
   generalQubTradeMessage,
   reconstructPlayer,
   generateInlineResults,
   reconstructPlayerByHref,
   setupPlayerStatsMessageBody,
   generateInlineResults22,
+  updatePlayerMode,
 }

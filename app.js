@@ -6,8 +6,8 @@ const { getSupabaseClient } = require('./script/state/repository/webdk');
 const { Telegraf } = require('telegraf');
 const createError = require('http-errors')
 
-const { generalQubUpdateMessage, generalQubTradeMessage } = require('./script/state/service/webgram');
-const { getFinalTelegramCheckMessage } = require('./script/state/service/webgram');
+const { cronUpdatesDatabase, generalQubTradeMessage } = require('./script/state/service/webgram');
+const { povCheckIn, updatePlayerMode } = require('./script/state/service/webgram');
 
 
 const supabase = getSupabaseClient();
@@ -22,11 +22,9 @@ console.log(`we have begun; ${create_cron_datetime(0, 0, 0, 2, 0, 0)}`);
 cron.schedule(
   create_cron_datetime("*/33", '*', '*', '*', '*', '*'), // 33 seconds
   async function() {
-    console.log(`...`)
-
-    let finalMsg = await generalQubUpdateMessage(supabase, "")
-    
-
+    console.log(`/*`)
+    let finalMsg = await cronUpdatesDatabase(supabase, "")
+    console.log(`*/`)
   }
 );  
 
@@ -44,12 +42,21 @@ bot.command('web', async (ctx) => {
   console.log("command", command)
   if (command === 'pov') {
     const queryText = args[2]; // Extract the user href
-    let finalMsg = await getFinalTelegramCheckMessage(supabase, queryText)
+    let finalMsg = await povCheckIn(supabase, queryText)
     ctx.reply(finalMsg)
   } else if (command === 'qub') {
     const queryText = args[2]; // Extract nothing
     let finalMsg = ""
-    finalMsg = await generalQubUpdateMessage(supabase, queryText)
+    finalMsg = await cronUpdatesDatabase(supabase, queryText)
+    ctx.reply(`|${finalMsg}|`)
+  } else if (command === 'mode') {
+    const queryText = args[2]; // Extract new value
+    const queryTextSplit = queryText.split(":"); // Extract new value
+    if (queryTextSplit.length < 2) {
+      return ctx.reply(`|invalid command structure|`)
+    }
+    let finalMsg = ""
+    finalMsg = await updatePlayerMode(supabase, queryTextSplit[0], parseInt(queryTextSplit[1]), ctx.message.from.id)
     ctx.reply(`|${finalMsg}|`)
   } else if (command === 'trade') {
     const queryText = args[2]; // Extract the user hash after "pov"

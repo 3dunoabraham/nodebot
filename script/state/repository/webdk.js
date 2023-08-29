@@ -109,33 +109,55 @@ async function fetchPlayerByHref(supabase, href_input) {
   return existingStart;
 }
 
-async function fetchPlayerByHash(supabase, hash_input) {
+async function fetchPlayerByHrefAndSrc(supabase, href_input, src_input) {
   const { data: existingStart } = await supabase.from('player').select(PS.player)
-    .match({ hash: hash_input }).single();
+    .match({ href: href_input, src: src_input }).single();
   return existingStart;
 }
 
 
 async function fetchPlayerWithOrdersSubAndMode(supabase) {
   const { data: existingStart } = await supabase.from('player').select(PS.player)
-    .match({ mode: 1 }).neq('orders', null)  .gt('subscription', 0)
+    // .match({ mode: 1 })
+    .neq('mode', 0).neq('orders', null)  .gt('subscription', 0)
 
   return existingStart
 }
+
+async function rewriteMode(supabase, playerHash, newVal) {
+  // const { data: playerData, error: selectError } = await supabase
+  // .from('player')
+  // .select('mode, orders')
+  // .match({ hash: playerHash })
+  // .single();
+
+  // console.log("rewrite mode", playerHash, newVal)
+  const { error: updateError } = await supabase
+  .from('player')
+  .update({ mode: newVal })
+  .match({ hash: playerHash });
+
+  return !updateError
+}
+
 async function updateModeIfValid(supabase, playerHash, newOrders) {
-  const { data: playerData, error: selectError } = await supabase
+    // console.log("finisupdateModeIfValidupdateModeIfValidupdateModeIfValid",)
+    const { data: playerData, error: selectError } = await supabase
     .from('player')
     .select('mode, orders')
     .match({ hash: playerHash })
     .single();
-  if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
+  // console.log("!selectError && playerData && playerData.mode === 1 && !!playerData.orders",
+  // !selectError , playerData, playerData.mode , !!playerData.orders)
+    if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
+    // console.log("selecteddddselectedddd",)
     const orderTransactions = playerData.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
     if (!orderTransactions) { return { success: false } }
     const { error: updateError } = await supabase
       .from('player')
-      .update({ mode: 0, orders: newOrders })
+      .update({ mode: -1, orders: newOrders })
       .match({ hash: playerHash });
-
+    // console.log("finished mode: 0, orders: newOrders", newOrders)
     if (!updateError) {
       return { success: true };
     } else {
@@ -148,6 +170,8 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
 
 
 module.exports = {
+  rewriteMode,
+  fetchPlayerByHrefAndSrc,
   getCurrentPrice,
   fetchPlayerByHref,
   fetchPlayerByHash,
