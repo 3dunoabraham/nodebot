@@ -142,7 +142,7 @@ async function cronUpdatesDatabase(supabase,queryText) {
         if (currentPrrr < theFirstOrder.price && thePllayer.mode == 1) {
           triggeredOrders += `|||${JSON.stringify(theFirstOrder)}`
           await executeFinalTrade(supabase, thePllayer.hash, theFirstOrder, thePllayer)
-        } else if (currentPrrr > theLastOrder.price) {
+        } else if (currentPrrr > theLastOrder.price && thePllayer.mode == -1) {
           triggeredOrders += `|||${JSON.stringify(theLastOrder)}`
           await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
         } else {
