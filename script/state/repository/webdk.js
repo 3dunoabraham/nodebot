@@ -149,13 +149,13 @@ async function updateModeIfValid(supabase, playerHash, newOrders) {
     .single();
   // console.log("!selectError && playerData && playerData.mode === 1 && !!playerData.orders",
   // !selectError , playerData, playerData.mode , !!playerData.orders)
-    if (!selectError && playerData && playerData.mode === 1 && !!playerData.orders) {
+    if (!selectError && playerData && (playerData.mode === -1 || playerData.mode === 1) && !!playerData.orders) {
     // console.log("selecteddddselectedddd",)
     const orderTransactions = playerData.orders.split('&&&').filter(item=>!!item).map((anOrder,index)=>JSON.parse(anOrder));
     if (!orderTransactions) { return { success: false } }
     const { error: updateError } = await supabase
       .from('player')
-      .update({ mode: -1, orders: newOrders })
+      .update({ mode: 2*playerData.mode, orders: newOrders })
       .match({ hash: playerHash });
     // console.log("finished mode: 0, orders: newOrders", newOrders)
     if (!updateError) {

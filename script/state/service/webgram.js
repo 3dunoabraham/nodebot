@@ -13,7 +13,7 @@ function setupPlayerStatsMessageBody(thePllayer) {
 }
 
 async function executeFinalTrade(supabase, queryText, orderData, thePllayer) {
-  if (thePllayer?.mode > 0 && !!thePllayer?.binancekeys) {
+  if ((thePllayer?.mode == 1 || thePllayer?.mode != 1) && !!thePllayer?.binancekeys) {
     // if (!!orderData && (orderData.isBuyer || orderData.side.toLowerCase() == "buy")) {
     if (!!orderData) {
       await updateModeIfValid(supabase, queryText, thePllayer.orders);
@@ -139,7 +139,7 @@ async function cronUpdatesDatabase(supabase,queryText) {
         if (!theFirstOrder) return
         let currentPrrr = await getCurrentPrice()
         // console.log("123****-*-*", currentPrrr < theFirstOrder.price, currentPrrr > theLastOrder.price)
-        if (currentPrrr < theFirstOrder.price) {
+        if (currentPrrr < theFirstOrder.price && thePllayer.mode == 1) {
           triggeredOrders += `|||${JSON.stringify(theFirstOrder)}`
           await executeFinalTrade(supabase, thePllayer.hash, theFirstOrder, thePllayer)
         } else if (currentPrrr > theLastOrder.price) {
@@ -147,7 +147,9 @@ async function cronUpdatesDatabase(supabase,queryText) {
           await executeFinalTrade(supabase, thePllayer.hash, theLastOrder, thePllayer)
         } else {
           // console.log("if (thePllayer.mode == -1) {",)
-          if (thePllayer.mode == -1) {
+          if (thePllayer.mode == 2) {
+            await rewriteMode(supabase, thePllayer.hash, -1)
+          } else if (thePllayer.mode == -2) {
             await rewriteMode(supabase, thePllayer.hash, 1)
           }
           console.log(`${Date.now()} ******`)
